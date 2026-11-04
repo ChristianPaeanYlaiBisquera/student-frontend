@@ -1,79 +1,212 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Database Project</title>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; }
-        .card { border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; border-radius: 5px; }
-        input, textarea, button { display: block; width: 100%; margin-bottom: 10px; padding: 8px; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <title>Lab Attendance</title>
+  <style>
+    :root { --bg:#f6f7f9; --card:#fff; --text:#1b1f24; --muted:#5b6572; --line:#dfe3e8; --accent:#0b5fff; --accent-text:#fff; --ok:#0a7a3d; --bad:#b42318; --chip:#eef2f7; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg:#0f1318; --card:#171c23; --text:#e8ecf1; --muted:#9aa5b1; --line:#2a323d; --accent:#5b8cff; --accent-text:#0b1020; --ok:#4cc38a; --bad:#ff8a80; --chip:#222a35; }
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font:16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    header, main { max-width:1000px; margin:0 auto; padding:0 16px; }
+    header { padding-top:24px; }
+    h1 { margin:0 0 4px; font-size:1.5rem; }
+    #status { margin:0; min-height:1.5em; color:var(--muted); }
+    #status.bad { color:var(--bad); }
+    .toolbar { display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:12px; margin:16px 0; }
+    label { display:grid; gap:4px; font-size:.875rem; color:var(--muted); }
+    input, select, button { font:inherit; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--text); }
+    button { cursor:pointer; background:var(--accent); border-color:var(--accent); color:var(--accent-text); font-weight:600; }
+    button:disabled { cursor:default; opacity:.6; }
+    button.done { background:transparent; border-color:var(--ok); color:var(--ok); opacity:1; }
+    :focus-visible { outline:3px solid var(--accent); outline-offset:2px; }
+    .table-wrap { overflow-x:auto; background:var(--card); border:1px solid var(--line); border-radius:12px; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { padding:10px 12px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line); }
+    tr:last-child td { border-bottom:0; }
+    th { font-size:.8rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
+    .chip { display:inline-block; margin:0 4px 4px 0; padding:1px 8px; border-radius:999px; background:var(--chip); font-size:.8rem; }
+    #empty { margin:0; padding:16px; color:var(--muted); }
+    details { margin:20px 0 40px; }
+    summary { cursor:pointer; font-weight:600; }
+    form { display:grid; gap:12px; max-width:420px; margin-top:12px; }
+    .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+    [hidden] { display:none !important; }
+    @media (max-width: 640px) { /* phones: one card per student, so the button never scrolls out of sight */
+      thead { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+      table, tbody, tr, td { display:block; }
+      tr { padding:10px 12px; border-bottom:1px solid var(--line); }
+      tr:last-child { border-bottom:0; }
+      td { padding:2px 0; border:0; }
+      td:empty { display:none; }
+      td:first-child { font-weight:600; }
+      td[data-label]::before { content:attr(data-label) ": "; color:var(--muted); }
+      td:last-child { padding-top:8px; }
+      td:last-child button { width:100%; }
+    }
+  </style>
 </head>
 <body>
-    <h2>Add New Record</h2>
-    <form id="dataForm">
-        <input type="text" id="title" placeholder="Record Title" required>
-        <input type="text" id="content" placeholder="Record Content" required>
-        <button type="submit">Submit to Database</button>
-    </form>
+  <header>
+    <h1>Lab Attendance</h1>
+    <p id="status" role="status">Loading…</p>
+  </header>
 
-    <h2>Database Records</h2>
-    <div id="recordsContainer">Loading...</div>
+  <main>
+    <div class="toolbar">
+      <label>Search student <input id="q" type="search" placeholder="Name"></label>
+      <label>Section <select id="section"></select></label>
+      <label>Subject <select id="subject"></select></label>
+      <label>Class date <input id="date" type="date"></label>
+      <label>Teacher key <input id="key" type="password" autocomplete="off" placeholder="Needed to save changes"></label>
+    </div>
 
-    <script>
-        // IMPORTANT: Replace this URL with your specific Vercel deployment URL
-        const VERCEL_API_URL = 'https://bisquera-api-backend.vercel.app/api';
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Student</th><th>Section</th><th>Subject</th><th>Present</th><th>Dates</th><th><span class="sr-only">Action</span></th></tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <p id="empty" hidden>No students match.</p>
+    </div>
 
-        // Function to fetch and display records
-        async function loadRecords() {
-            try {
-                const response = await fetch(VERCEL_API_URL);
-                const records = await response.json();
+    <details>
+      <summary>Add a student</summary>
+      <form id="add">
+        <label>Student name <input name="studentName" required maxlength="100"></label>
+        <label>Section <input name="section" list="sections" required maxlength="50"></label>
+        <label>Subject <input name="subjectName" list="subjects" required maxlength="100"></label>
+        <datalist id="sections"></datalist>
+        <datalist id="subjects"></datalist>
+        <button type="submit">Add student</button>
+      </form>
+    </details>
+  </main>
 
-                const container = document.getElementById('recordsContainer');
-                container.innerHTML = '';
+  <script>
+    // The Vercel backend. It talks to MongoDB; this page never touches the database directly.
+    const API = 'https://bisquera-api-backend.vercel.app/api';
+    const $ = (id) => document.getElementById(id);
+    let records = [];
 
-                if(records.length === 0) {
-                    container.innerHTML = '<p>No records found.</p>';
-                    return;
-                }
+    $('date').value = new Date().toLocaleDateString('en-CA'); // today as YYYY-MM-DD, in your timezone
+    try { $('key').value = localStorage.getItem('teacherKey') || ''; } catch (e) {}
+    $('key').addEventListener('change', () => {
+      try { localStorage.setItem('teacherKey', $('key').value); } catch (e) {}
+    });
 
-                records.forEach(record => {
-                    const div = document.createElement('div');
-                    div.className = 'card';
-                    div.innerHTML = `<strong>${record.title}</strong><br>${record.content}`;
-                    container.appendChild(div);
-                });
-            } catch (error) {
-                document.getElementById('recordsContainer').innerText = 'Error loading records.';
-            }
-        }
+    function say(text, bad) {
+      $('status').textContent = text;
+      $('status').className = bad ? 'bad' : '';
+    }
 
-        // Function to handle form submission
-        document.getElementById('dataForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+    async function api(method, query, body) {
+      const init = { method };
+      if (method !== 'GET') {
+        init.headers = { 'Content-Type': 'application/json', 'x-api-key': $('key').value };
+        init.body = JSON.stringify(body);
+      }
+      const res = await fetch(API + query, init).catch(() => {
+        throw new Error('Cannot reach the server. Check your internet connection.');
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Request failed (' + res.status + ')');
+      return data;
+    }
 
-            const title = document.getElementById('title').value;
-            const content = document.getElementById('content').value;
+    const day = (iso) => iso.slice(0, 10); // dates are stored as UTC midnight, so read them as UTC
+    const pretty = (d) => new Date(d + 'T00:00:00Z').toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
-            try {
-                await fetch(VERCEL_API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title, content })
-                });
+    function fill(select, label, values) {
+      const keep = select.value;
+      select.replaceChildren(new Option(label, ''), ...[...new Set(values)].sort().map((v) => new Option(v, v)));
+      select.value = keep;
+    }
 
-                // Clear form and reload records
-                document.getElementById('dataForm').reset();
-                loadRecords();
-            } catch (error) {
-                alert('Failed to submit record.');
-            }
-        });
+    function row(r, date) {
+      const days = r.attendanceDates.map(day).sort();
+      const done = days.includes(date);
+      const tr = document.createElement('tr');
+      const cell = (text, label) => {
+        const td = document.createElement('td');
+        td.textContent = text;
+        if (label) td.dataset.label = label; // shown on phones, where the header row is hidden
+        tr.append(td);
+        return td;
+      };
 
-        // Initial load
-        loadRecords();
-    </script>
+      cell(r.studentName); cell(r.section, 'Section'); cell(r.subjectName, 'Subject'); cell(days.length, 'Present');
+      const dates = cell('', 'Dates');
+      for (const d of days) {
+        const chip = document.createElement('span');
+        chip.className = 'chip'; chip.title = d; chip.textContent = pretty(d);
+        dates.append(chip);
+      }
+
+      const btn = document.createElement('button');
+      btn.textContent = done ? 'Present ✓' : 'Mark present';
+      btn.className = done ? 'done' : '';
+      btn.disabled = done || !date;
+      btn.setAttribute('aria-label', (done ? 'Already present: ' : 'Mark present: ') + r.studentName + ' on ' + date);
+      btn.addEventListener('click', () => mark(r._id, date, btn));
+      cell('').append(btn);
+      return tr;
+    }
+
+    function render() {
+      const q = $('q').value.trim().toLowerCase(), sec = $('section').value, sub = $('subject').value, date = $('date').value;
+      const shown = records.filter((r) =>
+        (!sec || r.section === sec) && (!sub || r.subjectName === sub) && r.studentName.toLowerCase().includes(q));
+      $('rows').replaceChildren(...shown.map((r) => row(r, date)));
+      $('empty').hidden = shown.length > 0;
+    }
+
+    async function load(message) {
+      try {
+        records = await api('GET', '');
+        fill($('section'), 'All sections', records.map((r) => r.section));
+        fill($('subject'), 'All subjects', records.map((r) => r.subjectName));
+        $('sections').replaceChildren(...[...new Set(records.map((r) => r.section))].map((v) => new Option(v)));
+        $('subjects').replaceChildren(...[...new Set(records.map((r) => r.subjectName))].map((v) => new Option(v)));
+        say(message || records.length + ' students');
+      } catch (err) {
+        say(err.message, true);
+      }
+      render();
+    }
+
+    async function mark(id, date, btn) {
+      btn.disabled = true;
+      try {
+        const updated = await api('PATCH', '?id=' + encodeURIComponent(id), { date });
+        records = records.map((r) => (r._id === id ? updated : r));
+        say('Saved ' + pretty(date));
+      } catch (err) {
+        say(err.message, true);
+      }
+      render();
+    }
+
+    $('add').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      e.submitter.disabled = true;
+      try {
+        await api('POST', '', Object.fromEntries(new FormData(e.target)));
+        e.target.reset();
+        await load('Student added');
+      } catch (err) {
+        say(err.message, true);
+      }
+      e.submitter.disabled = false;
+    });
+
+    ['q', 'section', 'subject', 'date'].forEach((id) => $(id).addEventListener('input', render));
+    load();
+  </script>
 </body>
 </html>
