@@ -6,7 +6,7 @@
   <meta name="color-scheme" content="light dark">
   <meta name="theme-color" content="#f3f5ff" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#080c1c" media="(prefers-color-scheme: dark)">
-  <title>Lab Attendance</title>
+  <title>Lab Attendance · Attendance Management Portal</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%234f46e5'/%3E%3Cstop offset='1' stop-color='%237c3aed'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='10' fill='url(%23g)'/%3E%3Cpath d='m9 16.5 4.5 4.5L23 11.5' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <script>
     /* Apply the saved (or device) theme before the page paints, so it never flashes the wrong colours. */
@@ -209,15 +209,16 @@
     .count { margin-left:auto; font-size:.86rem; font-weight:700; color:var(--muted); white-space:nowrap; }
 
     /* ---- student rows ---- */
-    .list { display:grid; grid-template-columns:repeat(auto-fill, minmax(350px, 1fr)); gap:14px; }
-    .row { min-width:0;
-      display:flex; align-items:center; gap:14px; padding:14px 16px; border:1px solid var(--line); border-radius:22px; background:var(--surface); box-shadow:var(--shadow-sm);
+    .list { display:grid; grid-template-columns:repeat(auto-fill, minmax(430px, 1fr)); gap:14px; }
+    .row {
+      min-width:0; display:grid; grid-template-columns:56px minmax(0, 1fr) auto; grid-template-areas:"ava who go" "foot foot foot"; align-items:center; gap:12px 14px;
+      padding:14px 16px 10px; border:1px solid var(--line); border-radius:22px; background:var(--surface); box-shadow:var(--shadow-sm);
       transition:transform .15s, box-shadow .15s, border-color .15s;
     }
     .row:hover { transform:translateY(-2px); box-shadow:var(--shadow); border-color:var(--line-2); }
     .row.is-done { border-color:var(--ok-line); }
     .row.flash { animation:glow 1.2s ease-out; }
-    .ava { position:relative; flex:none; width:56px; height:56px; }
+    .ava { position:relative; grid-area:ava; width:56px; height:56px; }
     .ringsvg { position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); }
     .ringsvg circle { fill:none; stroke-width:3; }
     .ringsvg .trk { stroke:var(--line); }
@@ -231,12 +232,23 @@
       background:hsl(var(--h) 85% 92%); color:hsl(var(--h) 60% 26%);
     }
     :root[data-theme=dark] .face { background:hsl(var(--h) 45% 24%); color:hsl(var(--h) 85% 85%); }
-    .who { flex:1; min-width:0; }
+    .who { grid-area:who; min-width:0; }
     .nm { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:1rem; font-weight:800; letter-spacing:-.01em; }
     .mt { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.82rem; font-weight:600; color:var(--muted); }
-    .rt { margin-top:3px; font-size:.74rem; font-weight:800; color:var(--subtle); }
+    .rt { font-size:.76rem; font-weight:800; color:var(--subtle); }
+    .foot { grid-area:foot; display:flex; align-items:center; justify-content:space-between; gap:8px; padding-top:8px; border-top:1px dashed var(--line); }
+    .acts { display:flex; align-items:center; gap:2px; }
+    .mini {
+      display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 11px; border:0; border-radius:11px; background:transparent; color:var(--muted);
+      font-size:.8rem; font-weight:800; cursor:pointer; transition:background-color .15s, color .15s;
+    }
+    .mini .icon { width:16px; height:16px; }
+    .mini:hover { background:var(--surface-2); color:var(--text); }
+    .mini.del:hover { background:var(--bad-soft); color:var(--bad); }
+    .mini:focus-visible { outline:0; box-shadow:var(--ring); }
+    @media (pointer:coarse) { .mini { height:40px; } } /* bigger tap target on touch screens */
     .go {
-      display:inline-flex; flex:none; align-items:center; justify-content:center; gap:7px; height:44px; padding:0 15px; border:1px solid var(--line-2); border-radius:15px;
+      grid-area:go; display:inline-flex; flex:none; align-items:center; justify-content:center; gap:7px; height:44px; padding:0 15px; border:1px solid var(--line-2); border-radius:15px;
       background:var(--surface-2); color:var(--text); font-size:.84rem; font-weight:800; cursor:pointer; transition:background-color .15s, border-color .15s, color .15s, box-shadow .15s, transform .08s;
     }
     .go:hover:not(:disabled) { color:#fff; border-color:transparent; background:var(--grad); box-shadow:0 14px 24px -12px rgba(99,102,241,.9); }
@@ -279,6 +291,19 @@
     .noteb.ok { background:var(--ok-soft); color:var(--ok); }
     .noteb.bad { background:var(--bad-soft); color:var(--bad); }
     .dlg-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:auto; padding-top:8px; }
+    .dates { display:grid; gap:8px; margin:0; padding:0; list-style:none; }
+    .dateitem { display:flex; align-items:center; gap:8px; }
+    .dateitem .field { flex:1; height:42px; }
+    .btn-sm { align-self:flex-start; height:38px; padding:0 14px; border-radius:13px; font-size:.84rem; }
+    .btn-danger { color:#fff; background:#be123c; box-shadow:0 14px 26px -14px rgba(190, 18, 60, .9); }
+    .btn-danger:hover:not(:disabled) { filter:brightness(1.12); }
+    dialog.confirm { width:min(420px, calc(100vw - 32px)); padding:0; border:1px solid var(--line-2); border-radius:28px; background:var(--surface); color:var(--text); box-shadow:var(--shadow-pop); }
+    dialog.confirm::backdrop { background:rgba(8, 12, 28, .55); -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); }
+    dialog.confirm[open] { animation:rise .22s ease-out; }
+    #c-form { display:grid; justify-items:center; gap:10px; padding:28px 24px 22px; text-align:center; }
+    #c-form h2 { font-size:1.3rem; font-weight:800; letter-spacing:-.02em; }
+    #c-form p { color:var(--muted); font-size:.94rem; }
+    #c-form .dlg-actions { justify-content:center; margin-top:6px; }
     .fab { display:none; }
 
     /* ---- toasts ---- */
@@ -385,6 +410,9 @@
     <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9M13 17V5M8 17v-3"/></symbol>
     <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></symbol>
     <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.4 3.6a2.1 2.1 0 0 1 3 3L7.4 18.6 3 20l1.4-4.4Z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></symbol>
   </svg>
   <div class="bg" aria-hidden="true"></div>
 
@@ -414,7 +442,7 @@
   <main class="wrap">
     <section class="hero">
       <div>
-        <p class="eyebrow">Class roll call</p>
+        <p class="eyebrow">Attendance management portal</p>
         <h1 id="h-title">Today</h1>
         <p class="sub" id="h-sub">&nbsp;</p>
       </div>
@@ -514,16 +542,33 @@
         <h2 id="add-title">Add a student</h2>
         <button class="roundbtn" id="addClose" type="button" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
       </div>
-      <p class="dlg-sub">They appear in the roll call straight away. Section and subject suggestions come from your current students.</p>
+      <p class="dlg-sub" id="add-sub">Add the student with the date they were present. Remove the date to add them without any attendance yet.</p>
       <label class="fld"><span>Student name</span><input class="field" name="studentName" required maxlength="100" placeholder="e.g. Maria Santos" autocomplete="off" autofocus></label>
       <label class="fld"><span>Section</span><input class="field" name="section" list="sections" required maxlength="50" placeholder="e.g. BSIT-3A" autocomplete="off"></label>
       <label class="fld"><span>Subject</span><input class="field" name="subjectName" list="subjects" required maxlength="100" placeholder="e.g. Database 2" autocomplete="off"></label>
       <datalist id="sections"></datalist>
       <datalist id="subjects"></datalist>
+      <div class="fld" role="group" aria-labelledby="dates-label">
+        <span id="dates-label">Attendance dates</span>
+        <ul class="dates" id="dates"></ul>
+        <button class="btn btn-line btn-sm" id="addDate" type="button"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Add a date</button>
+      </div>
       <p class="noteb" id="add-note" role="status" hidden></p>
       <div class="dlg-actions">
         <button class="btn btn-line" id="addCancel" type="button">Done</button>
-        <button class="btn btn-grad" type="submit"><svg class="icon" aria-hidden="true"><use href="#i-user-plus"/></svg>Add student</button>
+        <button class="btn btn-grad" type="submit" id="add-submit"><svg class="icon" aria-hidden="true"><use href="#i-user-plus"/></svg><span id="add-submit-label">Add student</span></button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="confirm" id="confirm" aria-labelledby="c-title">
+    <form id="c-form" method="dialog">
+      <span class="state-ico bad" aria-hidden="true"><svg class="icon"><use href="#i-trash"/></svg></span>
+      <h2 id="c-title">Delete this record?</h2>
+      <p id="c-text"></p>
+      <div class="dlg-actions">
+        <button class="btn btn-line" id="c-cancel" type="button">Cancel</button>
+        <button class="btn btn-danger" id="c-ok" type="submit">Delete</button>
       </div>
     </form>
   </dialog>
@@ -814,7 +859,7 @@
       rt.textContent = nClass ? attended + ' of ' + nClass + ' class days' : 'No class days yet';
       const who = document.createElement('div');
       who.className = 'who';
-      who.append(nm, mt, rt);
+      who.append(nm, mt);
 
       const btn = document.createElement('button');
       const label = document.createElement('span');
@@ -828,7 +873,28 @@
       btn.setAttribute('aria-label', (done ? 'Already present: ' : 'Mark present: ') + r.studentName + ' on ' + date);
       btn.addEventListener('click', () => mark(r, btn));
 
-      el.append(ava, who, btn);
+      // Edit and Delete sit under each student, next to how often they were present.
+      const miniBtn = (text, glyph, label) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'mini';
+        b.setAttribute('aria-label', label);
+        b.append(icon(glyph), text);
+        return b;
+      };
+      const edit = miniBtn('Edit', 'edit', 'Edit ' + r.studentName);
+      edit.addEventListener('click', () => openForm(r));
+      const del = miniBtn('Delete', 'trash', 'Delete ' + r.studentName);
+      del.classList.add('del');
+      del.addEventListener('click', () => askDelete(r));
+      const acts = document.createElement('div');
+      acts.className = 'acts';
+      acts.append(edit, del);
+      const foot = document.createElement('div');
+      foot.className = 'foot';
+      foot.append(rt, acts);
+
+      el.append(ava, who, btn, foot);
       return el;
     }
 
@@ -872,6 +938,14 @@
     }
 
     // ---------- actions ----------
+    // Fills the section / subject pickers and the suggestion lists from the current records.
+    function refill() {
+      fill($('section'), 'All sections', records.map((r) => r.section));
+      fill($('subject'), 'All subjects', records.map((r) => r.subjectName));
+      $('sections').replaceChildren(...[...new Set(records.map((r) => r.section))].map((v) => new Option(v)));
+      $('subjects').replaceChildren(...[...new Set(records.map((r) => r.subjectName))].map((v) => new Option(v)));
+    }
+
     async function load() {
       $('refresh').disabled = true;
       $('refresh').classList.add('spinning');
@@ -882,10 +956,7 @@
         if (!Array.isArray(data)) throw new Error('Unexpected reply from the server.');
         records = data;
         loaded = true;
-        fill($('section'), 'All sections', records.map((r) => r.section));
-        fill($('subject'), 'All subjects', records.map((r) => r.subjectName));
-        $('sections').replaceChildren(...[...new Set(records.map((r) => r.section))].map((v) => new Option(v)));
-        $('subjects').replaceChildren(...[...new Set(records.map((r) => r.subjectName))].map((v) => new Option(v)));
+        refill();
         conn('ok', 'Connected');
       } catch (err) {
         conn('error', 'Offline');
@@ -925,7 +996,52 @@
       $('add-note').className = 'noteb ' + kind;
       $('add-note').hidden = false;
     }
-    const openAdd = () => { $('add-note').hidden = true; drawer.showModal(); };
+    let editing = null; // the record being edited, or null when adding a new one
+
+    // One editable attendance date: a date box and a remove button.
+    function dateRow(value) {
+      const li = document.createElement('li');
+      li.className = 'dateitem';
+      const input = document.createElement('input');
+      input.type = 'date';
+      input.className = 'field';
+      input.required = true;
+      input.value = value || '';
+      input.setAttribute('aria-label', 'Attendance date');
+      const rm = document.createElement('button');
+      rm.type = 'button';
+      rm.className = 'roundbtn';
+      rm.setAttribute('aria-label', 'Remove this date');
+      rm.append(icon('trash'));
+      rm.addEventListener('click', () => li.remove());
+      li.append(input, rm);
+      return li;
+    }
+
+    // Opens the side panel: empty to add a student, or filled in to edit `r`.
+    function openForm(r) {
+      editing = r || null;
+      const f = $('add');
+      f.elements.studentName.value = r ? r.studentName : '';
+      f.elements.section.value = r ? r.section : '';
+      f.elements.subjectName.value = r ? r.subjectName : '';
+      const days = r ? [...new Set(daysOf(r))].sort() : date ? [date] : [];
+      $('dates').replaceChildren(...days.map(dateRow));
+      $('add-title').textContent = r ? 'Edit record' : 'Add a student';
+      $('add-sub').textContent = r
+        ? 'Fix a misspelled name, change the section or subject, or correct, remove or add attendance dates.'
+        : 'Add the student with the date they were present. Remove the date to add them without any attendance yet.';
+      $('add-submit-label').textContent = r ? 'Save changes' : 'Add student';
+      $('addCancel').textContent = r ? 'Cancel' : 'Done';
+      $('add-note').hidden = true;
+      drawer.showModal();
+    }
+    const openAdd = () => openForm(null);
+    $('addDate').addEventListener('click', () => {
+      const li = dateRow(date);
+      $('dates').append(li);
+      li.querySelector('input').focus();
+    });
     $('addToggle').addEventListener('click', openAdd);
     $('emptyAdd').addEventListener('click', openAdd);
     $('fab').addEventListener('click', openAdd);
@@ -933,19 +1049,63 @@
     $('addClose').addEventListener('click', () => drawer.close());
     drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.close(); }); // a click on the dimmed area closes it
 
+    // CREATE (POST) when adding, UPDATE (PUT) when editing. The dates list is sent as it stands,
+    // so a changed date is replaced and a removed date is dropped.
     $('add').addEventListener('submit', (e) => {
       e.preventDefault();
       const form = e.target;
-      return busy(e.submitter || form.querySelector('[type=submit]'), 'Adding…', async () => {
+      const was = editing;
+      const body = {
+        ...Object.fromEntries(new FormData(form)),
+        attendanceDates: [...new Set([...$('dates').querySelectorAll('input')].map((i) => i.value).filter(Boolean))],
+      };
+      return busy(e.submitter || form.querySelector('[type=submit]'), was ? 'Saving…' : 'Adding…', async () => {
         try {
-          const added = form.elements.studentName.value.trim();
-          await api('POST', '', Object.fromEntries(new FormData(form)));
-          form.elements.studentName.value = ''; // keep section + subject: students are usually added in batches
-          note('Added ' + added + '. Add another, or press Done.', 'ok');
-          form.elements.studentName.focus();
-          load();
+          if (was) {
+            const updated = await api('PUT', '?id=' + encodeURIComponent(was._id), body);
+            records = records.map((x) => (x._id === was._id ? updated : x));
+            drawer.close();
+            refill();
+            render();
+            toast('Saved changes to ' + updated.studentName);
+            $('v-list').querySelector('[data-id="' + CSS.escape(was._id) + '"]')?.classList.add('flash');
+          } else {
+            await api('POST', '', body);
+            form.elements.studentName.value = ''; // keep section + subject + dates: students are usually added in batches
+            note('Added ' + body.studentName.trim() + '. Add another, or press Done.', 'ok');
+            form.elements.studentName.focus();
+            load();
+          }
         } catch (err) {
           note(err.status === 401 ? 'That teacher key was not accepted. Close this panel and check “Teacher key”.' : err.message, 'bad');
+        }
+      });
+    });
+
+    // ---------- delete (always asks first) ----------
+    const confirmBox = $('confirm');
+    let toDelete = null;
+    function askDelete(r) {
+      toDelete = r;
+      $('c-text').textContent = r.studentName + ' (' + r.section + ' · ' + r.subjectName + ') and all of their attendance dates will be removed from the database. This can’t be undone.';
+      confirmBox.showModal();
+    }
+    $('c-cancel').addEventListener('click', () => confirmBox.close());
+    confirmBox.addEventListener('click', (e) => { if (e.target === confirmBox) confirmBox.close(); });
+    $('c-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const r = toDelete;
+      return busy($('c-ok'), 'Deleting…', async () => {
+        try {
+          await api('DELETE', '?id=' + encodeURIComponent(r._id));
+          records = records.filter((x) => x._id !== r._id);
+          confirmBox.close();
+          refill();
+          render();
+          toast('Deleted ' + r.studentName);
+        } catch (err) {
+          confirmBox.close();
+          fail(err);
         }
       });
     });
